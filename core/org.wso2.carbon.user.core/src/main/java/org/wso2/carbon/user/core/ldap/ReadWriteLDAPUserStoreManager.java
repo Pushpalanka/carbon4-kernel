@@ -2074,7 +2074,7 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
                 String.valueOf(UserStoreConfigConstants.DEFAULT_CONNECTION_RETRY_DELAY_IN_MILLISECONDS),
                 UserStoreConfigConstants.CONNECTION_RETRY_DELAY_DESCRIPTION);
         setAdvancedProperty(UserStoreConfigConstants.enableMaxUserLimitForSCIM, UserStoreConfigConstants
-                        .enableMaxUserLimitDisplayName, "true",
+                        .enableMaxUserLimitDisplayName, "false",
                 UserStoreConfigConstants.enableMaxUserLimitForSCIMDescription);
     }
 

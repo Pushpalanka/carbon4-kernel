@@ -347,7 +347,7 @@ public class JDBCUserStoreConstants {
         setAdvancedProperty(UserStoreConfigConstants.claimOperationsSupported, UserStoreConfigConstants.getClaimOperationsSupportedDisplayName, "true",
                 UserStoreConfigConstants.claimOperationsSupportedDescription);
         setAdvancedProperty(UserStoreConfigConstants.enableMaxUserLimitForSCIM, UserStoreConfigConstants
-                        .enableMaxUserLimitDisplayName, "true",
+                        .enableMaxUserLimitDisplayName, "false",
                 UserStoreConfigConstants.enableMaxUserLimitForSCIMDescription);
         setProperty("UniqueID", "", "", "");
     }
