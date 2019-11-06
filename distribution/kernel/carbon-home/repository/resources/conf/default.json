@@ -31,6 +31,7 @@
   "user_store.properties.MaxUserNameListLength": "100",
   "user_store.properties.MaxRoleNameListLength": "100",
   "user_store.properties.UserCoreCacheTimeOut":"5",
+  "user_store.properties.EnableMaxUserLimitForSCIM": false,
   "governance_data.data_source": "SHARED_DB",
   "governance_data.cache_id": "$ref{database.shared_db.username}@$ref{database.shared_db.url}",
   "governance_data.enable_cache": true,
