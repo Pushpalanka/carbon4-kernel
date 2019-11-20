@@ -181,9 +181,15 @@ public class DefaultRealmService implements RealmService {
                             bootstrapRealmConfig, tenantRealmConfig, tenantId);
                 }
                 String lockedString = tenant.getDomain() + "@DefaultRealmService_getTenantUserRealmInternal";
-                synchronized (lockedString.intern()) {
-                    userRealm = initializeRealm(tenantRealmConfig, tenantId);
-                    realmCache.addToCache(tenantId, PRIMARY_TENANT_REALM, userRealm);
+                userRealm = getCachedUserRealm(tenantId);
+                if (userRealm == null) {
+                    synchronized (lockedString.intern()) {
+                        userRealm = getCachedUserRealm(tenantId);
+                        if (userRealm == null) {
+                            userRealm = initializeRealm(tenantRealmConfig, tenantId);
+                            realmCache.addToCache(tenantId, PRIMARY_TENANT_REALM, userRealm);
+                        }
+                    }
                 }
             }
 
@@ -244,9 +250,15 @@ public class DefaultRealmService implements RealmService {
                         tenantId);
             }
 
-            synchronized (tenantDomain.intern()) {
-                userRealm = initializeRealm(tenantRealmConfig, tenantId);
-                realmCache.addToCache(tenantId, PRIMARY_TENANT_REALM, userRealm);
+            userRealm = (UserRealm) realmCache.getUserRealm(tenantId, PRIMARY_TENANT_REALM);
+            if (userRealm == null) {
+                synchronized (tenantDomain.intern()) {
+                    userRealm = (UserRealm) realmCache.getUserRealm(tenantId, PRIMARY_TENANT_REALM);
+                    if (userRealm == null) {
+                        userRealm = initializeRealm(tenantRealmConfig, tenantId);
+                        realmCache.addToCache(tenantId, PRIMARY_TENANT_REALM, userRealm);
+                    }
+                }
             }
         }
         return userRealm;
