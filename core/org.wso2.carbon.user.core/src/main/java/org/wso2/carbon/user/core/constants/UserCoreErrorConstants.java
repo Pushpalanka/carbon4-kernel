@@ -52,8 +52,8 @@ public class UserCoreErrorConstants {
         ERROR_CODE_WRITE_GROUPS_NOT_ENABLED("30014", NO_READ_WRITE_PERMISSIONS + " Write groups is not enabled in "
                 + "user store"),
         ERROR_CODE_DUPLICATE_WHILE_WRITING_TO_DATABASE("30015", "Constrain violation while writing to database."),
-
-
+        ERROR_CODE_DOMAIN_VALUE_WITH_FILTER_EMPTY("34012", "Filter value is not provided"),
+        ERROR_CODE_NULL_CLAIM_URI("30018", "Claim URI is not provided"),
         // Error code related with authentication
         ERROR_CODE_ERROR_WHILE_AUTHENTICATION("31001", "Un-expected error while authenticating"),
         ERROR_CODE_ERROR_WHILE_PRE_AUTHENTICATION("31002", "Un-expected error while pre-authenticating, %s"),
@@ -91,7 +91,13 @@ public class UserCoreErrorConstants {
                 "paginated user list, %s"),
         ERROR_CODE_ERROR_DURING_PRE_GET_PAGINATED_USER_LIST("34105", "Un-expected error during pre get paginated user" +
                 "list, %s"),
-
+        // Error code related with GetRoleCount
+        ERROR_CODE_ERROR_WHILE_GETTING_ROLES_COUNT("34015", "Un-expected error while getting role count"),
+        // Error code related with countUsers
+        ERROR_CODE_ERROR_WHILE_GETTING_COUNT_USERS("34013",
+                "Un-expected error while getting user count, %s"),
+        ERROR_CODE_ERROR_WHILE_GETTING_USER_COUNT_IN_SECONDARY_USER_STORE("34014",
+                "Un-expected error while getting user count in secondary user store , %s"),
 
         // Error code related with ListPaginatedUsers
         ERROR_CODE_ERROR_WHILE_LISTING_PAGINATED_USERS("34203", "Un-expected error while listing paginated user, %s"),
@@ -210,7 +216,8 @@ public class UserCoreErrorConstants {
                 + "updating user list of role, %s"),
         ERROR_CODE_ERROR_WHILE_POST_UPDATE_USERS_OF_ROLE("31903", "Un-expected error during post-step of "
                 + "updating user list of role, %s"),
-
+        ERROR_CODE_ERROR_WHILE_EXECUTING_THE_SQL("31603",
+                "Un-expected error occurred while retrieving users count when apply filters to SQL"),
         // Error code related with updating permissions of role.
         ERROR_CODE_ERROR_WHILE_UPDATING_PERMISSIONS_OF_ROLE("32101", "Un-expected error while updating permissions of  "
                 + "updating role,  %s");
@@ -219,6 +226,7 @@ public class UserCoreErrorConstants {
         private final String message;
 
         ErrorMessages(String code, String message) {
+
             this.code = code;
             this.message = message;
         }
