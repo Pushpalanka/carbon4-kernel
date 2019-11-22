@@ -54,20 +54,21 @@ public class AWSECSBasedMembershipScheme extends AWSBasedMembershipScheme {
             throw new ClusteringFault("Required parameter for AWS ECS membership scheme: networkInterface " +
                     "is not defined");
         } else {
-            networkConfig.getInterfaces().setEnabled(true).addInterface(((String) networkInterface.getValue()).trim());
+            getNetworkConfig().getInterfaces().setEnabled(true).addInterface(
+                    ((String) networkInterface.getValue()).trim());
 
             if (log.isDebugEnabled()) {
                 log.debug("\"" + networkInterface + "\" has been set set as the networkInterface for " +
                         "AWS ECS membership scheme.");
             }
         }
-        networkConfig.getJoin().getMulticastConfig().setEnabled(false);
+        getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
 
         if (log.isDebugEnabled()) {
             log.debug(networkInterface + "Multicast configuration has been disabled for AWS ECS membership scheme.");
         }
 
-        networkConfig.setPublicAddress(null);
+        getNetworkConfig().setPublicAddress(null);
 
         if (log.isDebugEnabled()) {
             log.debug(networkInterface + "Public address has been unset for AWS ECS membership scheme.");
