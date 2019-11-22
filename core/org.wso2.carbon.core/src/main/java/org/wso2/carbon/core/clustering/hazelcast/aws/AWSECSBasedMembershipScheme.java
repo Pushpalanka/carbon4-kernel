@@ -55,8 +55,7 @@ public class AWSECSBasedMembershipScheme extends AWSBasedMembershipScheme {
                     "is not defined");
         }
 
-        getNetworkConfig().getInterfaces().setEnabled(true).addInterface(
-                ((String) networkInterface.getValue()).trim());
+        getNetworkConfig().getInterfaces().setEnabled(true).addInterface(((String) networkInterface.getValue()).trim());
 
         if (log.isDebugEnabled()) {
             log.debug("\"" + networkInterface + "\" has been set set as the networkInterface for " +
