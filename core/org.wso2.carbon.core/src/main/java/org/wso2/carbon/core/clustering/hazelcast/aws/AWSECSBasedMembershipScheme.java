@@ -65,13 +65,13 @@ public class AWSECSBasedMembershipScheme extends AWSBasedMembershipScheme {
         getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
 
         if (log.isDebugEnabled()) {
-            log.debug(networkInterface + "Multicast configuration has been disabled for AWS ECS membership scheme.");
+            log.debug("Multicast configuration has been disabled for AWS ECS membership scheme.");
         }
 
         getNetworkConfig().setPublicAddress(null);
 
         if (log.isDebugEnabled()) {
-            log.debug(networkInterface + "Public address has been unset for AWS ECS membership scheme.");
+            log.debug("Public address has been unset for AWS ECS membership scheme.");
         }
     }
 }
