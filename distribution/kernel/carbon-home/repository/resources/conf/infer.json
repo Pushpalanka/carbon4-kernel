@@ -189,7 +189,7 @@
       "clustering.local_member_port": 5701,
       "clustering.properties.tagKey": "aws:cloudformation:stack-name",
       "clustering.properties.tagValue": "EC2ContainerService-$ref{clustering.properties.clusterName}",
-      "clustering.properties.networkInterface": "10.0.*.*"
+      "clustering.properties.networkInterface": "$ref{clustering.properties.vpcCidrBlock}"
     }
   }
 }
