@@ -36,6 +36,7 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.core.clustering.hazelcast.HazelcastCarbonClusterImpl;
 import org.wso2.carbon.core.clustering.hazelcast.HazelcastMembershipScheme;
 import org.wso2.carbon.core.clustering.hazelcast.HazelcastUtil;
+import org.wso2.carbon.core.clustering.hazelcast.wka.WKAConstants;
 import org.wso2.carbon.utils.CarbonUtils;
 import org.wso2.carbon.utils.xml.StringUtils;
 import org.wso2.securevault.SecretResolver;
@@ -59,7 +60,7 @@ public class AWSBasedMembershipScheme implements HazelcastMembershipScheme {
     public static final String SECURE_VAULT_SECRET_KEY = "Axis2.clustering.aws.secretKey";
     private final Map<String, Parameter> parameters;
     private final String primaryDomain;
-    private final NetworkConfig networkConfig;
+    private final NetworkConfig nwConfig;
     private HazelcastInstance primaryHazelcastInstance;
     private final List<ClusteringMessage> messageBuffer;
     private HazelcastCarbonClusterImpl carbonCluster;
@@ -73,12 +74,7 @@ public class AWSBasedMembershipScheme implements HazelcastMembershipScheme {
         this.primaryDomain = primaryDomain;
         this.primaryHazelcastInstance = primaryHazelcastInstance;
         this.messageBuffer = messageBuffer;
-        this.networkConfig = config.getNetworkConfig();
-    }
-
-    protected NetworkConfig getNetworkConfig() {
-
-        return networkConfig;
+        this.nwConfig = config.getNetworkConfig();
     }
 
     @Override
@@ -98,9 +94,9 @@ public class AWSBasedMembershipScheme implements HazelcastMembershipScheme {
 
     @Override
     public void init() throws ClusteringFault {
-        networkConfig.getJoin().getMulticastConfig().setEnabled(false);
-        networkConfig.getJoin().getTcpIpConfig().setEnabled(false);
-        AwsConfig awsConfig = networkConfig.getJoin().getAwsConfig();
+        nwConfig.getJoin().getMulticastConfig().setEnabled(false);
+        nwConfig.getJoin().getTcpIpConfig().setEnabled(false);
+        AwsConfig awsConfig = nwConfig.getJoin().getAwsConfig();
         awsConfig.setEnabled(true);
 
         Parameter accessKey = getParameter(AWSConstants.ACCESS_KEY);
