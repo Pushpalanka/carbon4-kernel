@@ -942,9 +942,6 @@ public class ActiveDirectoryUserStoreManager extends ReadWriteLDAPUserStoreManag
                 UserStoreConfigConstants.CONNECTION_RETRY_DELAY_DISPLAY_NAME,
                 String.valueOf(UserStoreConfigConstants.DEFAULT_CONNECTION_RETRY_DELAY_IN_MILLISECONDS),
                 UserStoreConfigConstants.CONNECTION_RETRY_DELAY_DESCRIPTION);
-        setAdvancedProperty(UserStoreConfigConstants.enableMaxUserLimitForSCIM, UserStoreConfigConstants
-                        .enableMaxUserLimitDisplayName, "false",
-                UserStoreConfigConstants.enableMaxUserLimitForSCIMDescription);
     }
 
 
