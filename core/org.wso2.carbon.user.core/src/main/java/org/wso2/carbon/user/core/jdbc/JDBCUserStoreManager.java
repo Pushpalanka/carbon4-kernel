@@ -2166,7 +2166,9 @@ public class JDBCUserStoreManager extends AbstractUserStoreManager {
         try {
 
             ArrayList<String> propertyListToUpdate = new ArrayList<>();
-            Map<String, String> claimPropertyMap = new HashMap<>();
+            Map<String, String> claimAttributeMap = new HashMap<>();
+            Map<String, String> filteredClaimAttributeMap = new HashMap<>();
+            Map<String, String> attributeValueMap = new HashMap<>();
             Iterator<Map.Entry<String, String>> ite = claims.entrySet().iterator();
 
             // Get the property names fo the claims
@@ -2176,7 +2178,15 @@ public class JDBCUserStoreManager extends AbstractUserStoreManager {
 
                 String property = getClaimAtrribute(claimURI, userName, null);
                 propertyListToUpdate.add(property);
-                claimPropertyMap.put(claimURI, property);
+                claimAttributeMap.put(claimURI, property);
+                attributeValueMap.put(property, entry.getValue());
+            }
+            processAttributesBeforeUpdate(attributeValueMap);
+
+            for (Map.Entry<String, String> claimAttributeEntry : claimAttributeMap.entrySet()) {
+                if (attributeValueMap.containsKey(claimAttributeEntry.getValue())) {
+                    filteredClaimAttributeMap.put(claimAttributeEntry.getKey(), claimAttributeEntry.getValue());
+                }
             }
 
             String[] propertyArr = new String[propertyListToUpdate.size()];
@@ -2192,7 +2202,7 @@ public class JDBCUserStoreManager extends AbstractUserStoreManager {
             while (ite2.hasNext()) {
                 Map.Entry<String, String> entry = ite2.next();
                 String claimURI = entry.getKey();
-                String claimValue = claimPropertyMap.get(claimURI);
+                String claimValue = filteredClaimAttributeMap.get(claimURI);
                 if (claimValue != null && availableProperties.containsKey(claimValue)) {
                     String availableValue = availableProperties.get(claimValue);
                     if (availableValue != null && availableValue.equals(entry.getValue())) {
