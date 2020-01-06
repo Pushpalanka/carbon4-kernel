@@ -18,6 +18,7 @@
 package org.wso2.carbon.user.core.hybrid;
 
 import org.apache.commons.dbcp.BasicDataSource;
+import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.user.api.RealmConfiguration;
 import org.wso2.carbon.user.core.BaseTestCase;
 import org.wso2.carbon.user.core.ClaimTestUtil;
@@ -64,7 +65,7 @@ public class HybridRoleManagerTest extends BaseTestCase {
         realm.init(realmConfig, ClaimTestUtil.getClaimTestData(), ClaimTestUtil
                 .getProfileTestData(), MultitenantConstants.SUPER_TENANT_ID);
         hybridRoleMan = new HybridRoleManager(ds, MultitenantConstants.SUPER_TENANT_ID, realmConfig, realm);
-
+        PrivilegedCarbonContext.getThreadLocalCarbonContext().setUserRealm(realm);
     }
 
     private void initDataSource(String dbUrl) throws Exception {
