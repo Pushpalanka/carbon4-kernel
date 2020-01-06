@@ -645,10 +645,12 @@ public class DatabaseUtil {
             while (rs.next()) {
                 String name = rs.getString(1);
                 String domain = rs.getString(2);
-                if (StringUtils.isNotEmpty(domain) && !disabledDomainName.contains(domain)) {
-                    name = UserCoreUtil.addDomainToName(name, domain);
+                if(!disabledDomainName.contains(domain)) {
+                    if (domain != null) {
+                        name = UserCoreUtil.addDomainToName(name, domain);
+                    }
+                    lst.add(name);
                 }
-                lst.add(name);
             }
             if (lst.size() > 0) {
                 values = lst.toArray(new String[lst.size()]);
