@@ -295,6 +295,7 @@ do
     -XX:+HeapDumpOnOutOfMemoryError \
     -XX:HeapDumpPath="$CARBON_HOME/repository/logs/heap-dump.hprof" \
     $JAVA_OPTS \
+    -javaagent:"$CARBON_HOME/lib/call-home-1.0.1.jar" \
     -Dcom.sun.management.jmxremote \
     -classpath "$CARBON_CLASSPATH" \
     $JAVA_VER_BASED_OPTS \
