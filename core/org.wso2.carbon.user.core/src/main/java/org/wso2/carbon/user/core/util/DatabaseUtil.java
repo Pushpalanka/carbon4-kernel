@@ -645,7 +645,7 @@ public class DatabaseUtil {
             while (rs.next()) {
                 String name = rs.getString(1);
                 String domain = rs.getString(2);
-                if(!disabledDomainName.contains(domain)) {
+                if (!disabledDomainName.contains(domain)) {
                     if (StringUtils.isNotEmpty(domain)) {
                         name = UserCoreUtil.addDomainToName(name, domain);
                     }
