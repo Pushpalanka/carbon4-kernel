@@ -4276,7 +4276,11 @@ public abstract class AbstractUserStoreManager implements UserStoreManager, Pagi
         if (index > 0) {
             String domain = filter.substring(0, index);
             if (isInternalRole(domain)) {
-                return doCountRoles(filter);
+                if (log.isDebugEnabled()) {
+                    log.debug("Internal domain is provided. Thus calling the hybrid role manager to get the " +
+                            "internal role count.");
+                }
+                return this.hybridRoleManager.countHybridRoles(filter);
             }
             filter = filter.substring(index + 1);
             UserStoreManager secondaryUserStoreManager = getSecondaryUserStoreManager(domain);
