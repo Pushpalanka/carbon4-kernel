@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 /**
- *  This CarbonResponseWrapper handle the responses and generates headers with sameSite attribute value.
+ * Tomcat Response wrapper, which can handle the responses and generates headers with sameSite attribute value.
  */
 public class CarbonResponseWrapper extends Response {
 
@@ -63,7 +63,7 @@ public class CarbonResponseWrapper extends Response {
         if (cookie instanceof ServletCookie) {
             cookieString = cookieString + "; SameSite=" + ((ServletCookie) cookie).getSameSite();
         } else {
-            cookieString = cookieString + "; SameSite=" + SameSiteCookie.Strict;
+            cookieString = cookieString + "; SameSite=" + SameSiteCookie.STRICT;
         }
         return cookieString;
     }
