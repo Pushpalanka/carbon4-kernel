@@ -28,13 +28,10 @@ public enum SameSiteCookie {
     /**
      * This method will handle the sameSite translation from enum to as expected in the sameSite Specification.
      *
-     * @param cookie Cookie.
      * @return Expected sameSite value in the sameSite Specification.
      */
-    public static String sameSiteTranslation(Cookie cookie) {
-
-        SameSiteCookie sameSiteCookie = ((ServletCookie) cookie).getSameSite();
-        switch (sameSiteCookie) {
+    public String toPrintable() {
+        switch (this) {
             case LAX:
                 return "Lax";
             case NONE:
