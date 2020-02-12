@@ -15,11 +15,33 @@
  */
 package org.wso2.carbon.core;
 
+import javax.servlet.http.Cookie;
+
 /**
  * This will handle the default values of the sameSite cookie attribute.
  */
 public enum SameSiteCookie {
     LAX,
     STRICT,
-    NONE
+    NONE;
+
+    /**
+     * This method will handle the sameSite translation from enum to as expected in the sameSite Specification.
+     *
+     * @param cookie Cookie.
+     * @return Expected sameSite value in the sameSite Specification.
+     */
+    public static String sameSiteTranslation(Cookie cookie) {
+
+        SameSiteCookie sameSiteCookie = ((ServletCookie) cookie).getSameSite();
+        switch (sameSiteCookie) {
+            case LAX:
+                return "Lax";
+            case NONE:
+                return "None";
+            case STRICT:
+            default:
+                return "Strict";
+        }
+    }
 }
