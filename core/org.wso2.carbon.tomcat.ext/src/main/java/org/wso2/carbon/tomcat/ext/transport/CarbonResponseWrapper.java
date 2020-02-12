@@ -50,12 +50,11 @@ public class CarbonResponseWrapper extends Response {
     }
 
     /**
-     * This method generates the "Set-Cookie" header string. If we use the "ServletCookie" to generate cookies then
-     * it will get the sameSite value from ServletCookie and append into the cookieString, otherwise it will set the
-     * default sameSite value as "Strict".
+     * When "ServletCookie" uses to generate cookies, gets the sameSite value from ServletCookie and append it
+     * into the cookieString, otherwise set sameSite value as "Strict" by default.
      *
-     * @param cookie cookie.
-     * @return String value generated using cookie.
+     * @param cookie Cookie.
+     * @return Set-Cookie string value generated using cookie attributes.
      */
     @Override
     public String generateCookieString(Cookie cookie) {
