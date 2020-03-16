@@ -5820,19 +5820,19 @@ public abstract class AbstractUserStoreManager implements UserStoreManager, Pagi
     }
 
     /**
-     * Retrieve the list of users directly from the database,
-     * without using the cache.
-     * @param username username of the user
-     * @param filter filter to be used when searching for roles
-     * @return the list of roles which the specified users belongs to
-     * @throws UserStoreException
+     * Retrieve the list of users directly from the database without using the cache.
+     *
+     * @param username Username of the user.
+     * @param filter   Filter to be used when searching for roles.
+     * @return The list of roles which the specified users belongs to.
+     * @throws UserStoreException Thrown if user role retrieval fails.
      */
-    public final String[] getRoleListOfUserFromDatabase(String username, String filter)
-            throws UserStoreException {
+    public final String[] getRoleListOfUserFromDatabase(String username, String filter) throws UserStoreException {
 
         if (!isSecureCall.get()) {
             Class argTypes[] = new Class[]{String.class, String.class};
-            Object object = callSecure("getRoleListOfUserFromDatabase", new Object[]{username, filter}, argTypes);
+            Object object = callSecure("getRoleListOfUserFromDatabase", new Object[]{username, filter},
+                    argTypes);
             return (String[]) object;
         }
 
