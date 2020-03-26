@@ -646,13 +646,15 @@ public class HybridRoleManager {
 
                 String[] rolesToAdd = newRoleList.toArray(new String[newRoleList.size()]);
 
-                if (UserCoreConstants.OPENEDGE_TYPE.equals(type)) {
-                    sqlStmt2 = HybridJDBCConstants.ADD_ROLE_TO_USER_SQL_OPENEDGE;
-                    DatabaseUtil.udpateUserRoleMappingInBatchMode(dbConnection, sqlStmt2, user,
-                            tenantId, rolesToAdd, tenantId);
-                } else {
-                    DatabaseUtil.udpateUserRoleMappingInBatchMode(dbConnection, sqlStmt2, rolesToAdd,
-                            tenantId, UserCoreUtil.removeDomainFromName(user), tenantId, tenantId, domain);
+                if (deletedRoles != null && deletedRoles.length > 0) {
+                    if (UserCoreConstants.OPENEDGE_TYPE.equals(type)) {
+                        sqlStmt2 = HybridJDBCConstants.ADD_ROLE_TO_USER_SQL_OPENEDGE;
+                        DatabaseUtil.udpateUserRoleMappingInBatchMode(dbConnection, sqlStmt2, user,
+                                tenantId, rolesToAdd, tenantId);
+                    } else {
+                        DatabaseUtil.udpateUserRoleMappingInBatchMode(dbConnection, sqlStmt2, rolesToAdd,
+                                tenantId, UserCoreUtil.removeDomainFromName(user), tenantId, tenantId, domain);
+                    }
                 }
             }
             dbConnection.commit();
