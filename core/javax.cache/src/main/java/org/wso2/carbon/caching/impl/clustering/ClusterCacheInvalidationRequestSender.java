@@ -57,7 +57,7 @@ public class ClusterCacheInvalidationRequestSender implements CacheEntryRemovedL
 
     @Override
     public void entryCreated(CacheEntryEvent event) throws CacheEntryListenerException {
-        send(event);
+        // We don't need this as only a delete or an update should invalidate the caches.
     }
 
     /**
