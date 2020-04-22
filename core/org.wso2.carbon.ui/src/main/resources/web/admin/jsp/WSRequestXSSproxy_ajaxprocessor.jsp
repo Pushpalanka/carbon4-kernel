@@ -41,6 +41,7 @@
 <%@ page import="org.apache.commons.httpclient.Header" %>
 <%@ page import="org.wso2.carbon.ui.util.CharacterEncoder" %>
 <%@ page import="org.apache.xerces.util.SecurityManager"%>
+<%@ page import="org.owasp.encoder.Encode" %>
 <%@ page import="org.xml.sax.EntityResolver" %>
 <%@ page import="org.xml.sax.InputSource" %>
 <%@ page import="org.xml.sax.SAXException" %>
@@ -122,11 +123,12 @@
 "    </wsp:ExactlyOne>\n" +
 "</wsp:Policy>";
 
-    // Extract and decode all the parameters used to call WSRequest
+    // Extract and decode all the parameters used to call WSRequest.
     String uri, pattern, username, password, payload;
     try {
-        uri = decode(request.getParameter("uri"));
-		pattern = decode(request.getParameter("pattern"));
+        // Encode for html to avoid html content in uri being executed.
+        uri = Encode.forHtml(decode(request.getParameter("uri")));
+        pattern = decode(request.getParameter("pattern"));
         username = decode(request.getParameter("username"));
         password = decode(request.getParameter("password"));
         payload = decode(request.getParameter("payload"));
