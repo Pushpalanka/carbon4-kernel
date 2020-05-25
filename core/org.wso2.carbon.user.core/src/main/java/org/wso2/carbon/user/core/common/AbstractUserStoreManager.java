@@ -606,14 +606,22 @@ public abstract class AbstractUserStoreManager implements UserStoreManager, Pagi
     private boolean authenticateInternal(String userName, Object credential, boolean domainProvided)
             throws UserStoreException {
 
+        boolean iterative = false;
         AbstractUserStoreManager abstractUserStoreManager = this;
         if (this instanceof IterativeUserStoreManager) {
+            iterative = true;
             abstractUserStoreManager = ((IterativeUserStoreManager) this).getAbstractUserStoreManager();
         }
 
         boolean authenticated = false;
 
         UserStore userStore = abstractUserStoreManager.getUserStore(userName);
+
+        if (domainProvided && iterative) {
+            userName = userStore.getDomainFreeName();
+            userStore.setRecurssive(false);
+        }
+
         if (userStore.isRecurssive() && userStore.getUserStoreManager() instanceof AbstractUserStoreManager) {
             return ((AbstractUserStoreManager) userStore.getUserStoreManager()).authenticate(userStore.getDomainFreeName(),
                     credential, domainProvided);
@@ -7070,6 +7078,31 @@ public abstract class AbstractUserStoreManager implements UserStoreManager, Pagi
     private boolean generateUserStoreChain(String userName, Object credential, boolean domainProvided,
                                            List<String> userStorePreferenceOrder) throws UserStoreException {
 
+        // If domain name is provided, directly authenticate using the corresponding user store
+        if (domainProvided) {
+            String providedDomainName = this.getUserStore(userName).getDomainName();
+            // Check whether provided domain is in the preference list
+            if (userStorePreferenceOrder.contains(providedDomainName)) {
+                UserStoreManager userStoreManager = this.getSecondaryUserStoreManager(providedDomainName);
+                if (userStoreManager instanceof AbstractUserStoreManager) {
+                    IterativeUserStoreManager iterativeUserStoreManager = new IterativeUserStoreManager(
+                            (AbstractUserStoreManager) userStoreManager);
+                    return iterativeUserStoreManager.authenticate(userName, credential);
+                } else {
+                    if (log.isDebugEnabled()) {
+                        log.debug("UserStoreManager is not an instance of AbstractUserStoreManager hence authenticate the" +
+                                " user through all the available user store list.");
+                    }
+                    return authenticateInternal(userName, credential, true);
+                }
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("Authentication failure. Wrong username or password is provided.");
+                }
+                throw new UserStoreException("Authentication failure. Wrong username or password is provided.");
+            }
+        }
+        // If domain is not provided, generate a user store chain
         IterativeUserStoreManager initialUserStoreManager = null;
         IterativeUserStoreManager prevUserStoreManager = null;
         for (String domainName : userStorePreferenceOrder) {
@@ -7091,7 +7124,7 @@ public abstract class AbstractUserStoreManager implements UserStoreManager, Pagi
                     log.debug("UserStoreManager is not an instance of AbstractUserStoreManager hence authenticate the" +
                             " user through all the available user store list.");
                 }
-                return authenticateInternal(userName, credential, domainProvided);
+                return authenticateInternal(userName, credential, false);
             }
         }
         // Authenticate using the initial user store from the user store preference list.
