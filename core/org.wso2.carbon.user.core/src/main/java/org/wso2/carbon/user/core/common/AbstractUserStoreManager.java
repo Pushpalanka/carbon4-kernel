@@ -991,7 +991,7 @@ public abstract class AbstractUserStoreManager implements UserStoreManager, Pagi
         }
 
         // #################### Domain Name Free Zone Starts Here ################################
-        if (!doCheckExistingUser(userName)) {
+        if (!doCheckExistingUser(userStore.getDomainFreeName())) {
             String errorMessage = String.format(ErrorMessages.ERROR_CODE_NON_EXISTING_USER.getMessage(), userName,
                     realmConfig.getUserStoreProperty(UserCoreConstants.RealmConfig.PROPERTY_DOMAIN_NAME));
             String errorCode = ErrorMessages.ERROR_CODE_NON_EXISTING_USER.getCode();
