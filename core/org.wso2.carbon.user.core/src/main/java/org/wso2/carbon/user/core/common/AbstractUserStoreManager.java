@@ -84,6 +84,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
 import static org.wso2.carbon.user.core.constants.UserCoreErrorConstants.ErrorMessages.ERROR_CODE_DUPLICATE_WHILE_ADDING_A_HYBRID_ROLE;
@@ -91,6 +92,7 @@ import static org.wso2.carbon.user.core.constants.UserCoreErrorConstants.ErrorMe
 import static org.wso2.carbon.user.core.constants.UserCoreErrorConstants.ErrorMessages.ERROR_CODE_DUPLICATE_WHILE_ADDING_A_SYSTEM_USER;
 import static org.wso2.carbon.user.core.constants.UserCoreErrorConstants.ErrorMessages.ERROR_CODE_DUPLICATE_WHILE_ADDING_A_USER;
 import static org.wso2.carbon.user.core.constants.UserCoreErrorConstants.ErrorMessages.ERROR_CODE_DUPLICATE_WHILE_ADDING_ROLE;
+import static org.wso2.carbon.user.core.util.UserCoreUtil.addDomainToName;
 
 public abstract class AbstractUserStoreManager implements UserStoreManager, PaginatedUserStoreManager {
 
@@ -6494,7 +6496,10 @@ public abstract class AbstractUserStoreManager implements UserStoreManager, Pagi
             if (secondaryUserStoreManager instanceof AbstractUserStoreManager) {
                 Map<String, List<String>> roleNames = ((AbstractUserStoreManager) secondaryUserStoreManager)
                         .doGetRoleListOfUsers(entry.getValue(), entry.getKey());
-                allRoleNames.putAll(roleNames);
+                Map<String, List<String>> roleWithDomainQualifiedUsername = roleNames.keySet().stream()
+                        .collect(Collectors.toMap(key -> addDomainToName(key, entry.getKey()), key -> roleNames.get
+                                (key)));
+                allRoleNames.putAll(roleWithDomainQualifiedUsername);
             }
         }
 
@@ -6519,7 +6524,10 @@ public abstract class AbstractUserStoreManager implements UserStoreManager, Pagi
             return (Map<String, List<String>>) object;
         }
 
-        Map<String, List<String>> internalRoles = doGetInternalRoleListOfUsers(userNames, domainName);
+        Map<String, List<String>> internalRolesWithoutDomainInUsername = doGetInternalRoleListOfUsers(userNames, domainName);
+        Map<String, List<String>> internalRoles = internalRolesWithoutDomainInUsername.keySet().stream()
+                .collect(Collectors.toMap(key -> addDomainToName(key, domainName), key ->
+                        internalRolesWithoutDomainInUsername.get(key)));
 
         Map<String, List<String>> externalRoles = new HashMap<>();
         if (readGroupsEnabled) {
@@ -6530,11 +6538,11 @@ public abstract class AbstractUserStoreManager implements UserStoreManager, Pagi
         if (!internalRoles.isEmpty() && !externalRoles.isEmpty()) {
             for (String userName : userNames) {
                 List<String> roles = new ArrayList<>();
-                if (internalRoles.get(userName) != null) {
-                    roles.addAll(internalRoles.get(userName));
+                if (internalRoles.get(addDomainToName(userName, domainName)) != null) {
+                    roles.addAll(internalRoles.get(addDomainToName(userName, domainName)));
                 }
-                if (externalRoles.get(userName) != null) {
-                    roles.addAll(externalRoles.get(userName));
+                if (externalRoles.get(addDomainToName(userName, domainName)) != null) {
+                    roles.addAll(externalRoles.get(addDomainToName(userName, domainName)));
                 }
                 if (!roles.isEmpty()) {
                     combinedRoles.put(userName, roles);
@@ -6555,7 +6563,8 @@ public abstract class AbstractUserStoreManager implements UserStoreManager, Pagi
         for (String userName : userNames) {
             String[] externalRoles = doGetExternalRoleListOfUser(userName, null);
             if (!ArrayUtils.isEmpty(externalRoles)) {
-                externalRoleListOfUsers.put(userName, Arrays.asList(externalRoles));
+                externalRoleListOfUsers.put(addDomainToName(userName, this.getMyDomainName()), Arrays.asList
+                        (externalRoles));
             }
         }
         return externalRoleListOfUsers;
