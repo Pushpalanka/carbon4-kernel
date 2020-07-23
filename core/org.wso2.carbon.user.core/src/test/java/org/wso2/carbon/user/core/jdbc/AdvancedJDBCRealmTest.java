@@ -32,6 +32,7 @@ import org.wso2.carbon.user.core.UserCoreTestConstants;
 import org.wso2.carbon.user.core.UserRealm;
 import org.wso2.carbon.user.core.UserStoreException;
 import org.wso2.carbon.user.core.UserStoreManager;
+import org.wso2.carbon.user.core.common.AbstractUserStoreManager;
 import org.wso2.carbon.user.core.common.DefaultRealm;
 import org.wso2.carbon.user.core.common.SampleAbstractUserManagementErrorListener;
 import org.wso2.carbon.user.core.config.RealmConfigXMLProcessor;
@@ -339,30 +340,30 @@ public class AdvancedJDBCRealmTest extends BaseTestCase {
     }
 
     public void doUserRoleStuff() throws Exception {
-        UserStoreManager admin = realm.getUserStoreManager();
+        UserStoreManager userStoreManager = realm.getUserStoreManager();
 
         InputStream inStream = this.getClass().getClassLoader().getResource(JDBCRealmTest.
                 JDBC_TEST_USERMGT_XML).openStream();
         RealmConfigXMLProcessor realmConfigProcessor = new RealmConfigXMLProcessor();
         RealmConfiguration realmConfig = realmConfigProcessor.buildRealmConfiguration(inStream);
 
-        admin.addRole("role2", null, null);
-        admin.addRole("role3", null, null);
-        admin.addRole("role4", null, null);
-        assertEquals(6, admin.getRoleNames().length);//admin,everyone,role1,role2,role3,role4
+        userStoreManager.addRole("role2", null, null);
+        userStoreManager.addRole("role3", null, null);
+        userStoreManager.addRole("role4", null, null);
+        assertEquals(6, userStoreManager.getRoleNames().length);//admin,everyone,role1,role2,role3,role4
 
         //Test delete role method
-        assertTrue(admin.isExistingRole("role3"));
-        admin.deleteRole("role3");
-        admin.deleteRole("role4");
-        assertFalse(admin.isExistingRole("role3"));
-        admin.addRole("role3", null, null);
-        admin.addRole("role4", null, null);
-        admin.addRole("roleShared", null, null);
+        assertTrue(userStoreManager.isExistingRole("role3"));
+        userStoreManager.deleteRole("role3");
+        userStoreManager.deleteRole("role4");
+        assertFalse(userStoreManager.isExistingRole("role3"));
+        userStoreManager.addRole("role3", null, null);
+        userStoreManager.addRole("role4", null, null);
+        userStoreManager.addRole("roleShared", null, null);
 
         // Test errorneous scenario when deleting a role.
         try {
-            admin.deleteRole("Internal/everyone");
+            userStoreManager.deleteRole("Internal/everyone");
         } catch (UserStoreException ex) {
             Assert.assertEquals("Relevant event listener is not called during a failure scenario while trying to "
                             + "delete Internal/Everyone role", 1,
@@ -370,23 +371,23 @@ public class AdvancedJDBCRealmTest extends BaseTestCase {
         }
 
         //add users
-        admin.addUser("saman", "pass1", null, null, null, false);
-        admin.addUser("amara", "pass2", null, null, null, false);
-        admin.addUser("sunil", "pass3", null, null, null, false);
+        userStoreManager.addUser("saman", "pass1", null, null, null, false);
+        userStoreManager.addUser("amara", "pass2", null, null, null, false);
+        userStoreManager.addUser("sunil", "pass3", null, null, null, false);
 
         //update the ROLE list of USERS
-        admin.updateRoleListOfUser("saman", null, new String[]{"role2"});
-        admin.updateRoleListOfUser("saman", new String[]{"role2"}, new String[]{"role4",
+        userStoreManager.updateRoleListOfUser("saman", null, new String[]{"role2"});
+        userStoreManager.updateRoleListOfUser("saman", new String[]{"role2"}, new String[]{"role4",
                 "role3"});
         try {
-            admin.updateRoleListOfUser("saman", new String[]{"role2"}, new String[]{"role4",
+            userStoreManager.updateRoleListOfUser("saman", new String[]{"role2"}, new String[]{"role4",
                     "role3"});
         } catch (UserStoreException e) {
             fail("Cannot assign same role to user again.");
         }
 
         try {
-            admin.updateRoleListOfUser(null, null, new String[]{"role2"});
+            userStoreManager.updateRoleListOfUser(null, null, new String[]{"role2"});
             fail("Exceptions at missing user name");
         } catch (Exception ex) {
             //expected user
@@ -396,11 +397,11 @@ public class AdvancedJDBCRealmTest extends BaseTestCase {
         }
 
         // Renaming Role
-        admin.updateRoleName("role4", "role5");
+        userStoreManager.updateRoleName("role4", "role5");
 
         try {
             // updating to invalid role name
-            admin.updateRoleName("roleShared", "role@12#$");
+            userStoreManager.updateRoleName("roleShared", "role@12#$");
             if ("true".equalsIgnoreCase(realmConfig.getUserStoreProperty("SharedGroupEnabled"))) {
                 fail("Able to rename role with invalid characters");
             }
@@ -417,30 +418,30 @@ public class AdvancedJDBCRealmTest extends BaseTestCase {
             }
         }
 
-        String[] rolesOfSaman = admin.getRoleListOfUser("saman");
+        String[] rolesOfSaman = userStoreManager.getRoleListOfUser("saman");
         assertEquals(3, rolesOfSaman.length);
 
         // according to new implementation, getRoleListOfUser method would return everyone role name for all users
-        boolean userExist = admin.isExistingUser("isuru");
+        boolean userExist = userStoreManager.isExistingUser("isuru");
         if (userExist) {
             TestCase.assertTrue(false);
         } else {
-            String[] rolesOfisuru = admin.getRoleListOfUser("isuru");
+            String[] rolesOfisuru = userStoreManager.getRoleListOfUser("isuru");
             assertEquals(1, rolesOfisuru.length);
-            assertEquals(admin.getRealmConfiguration().getEveryOneRoleName(), rolesOfisuru[0]);
+            assertEquals(userStoreManager.getRealmConfiguration().getEveryOneRoleName(), rolesOfisuru[0]);
         }
 
-        admin.updateUserListOfRole("role2", new String[]{"saman"}, null);
-        admin.updateUserListOfRole("role3", null, new String[]{"amara", "sunil"});
+        userStoreManager.updateUserListOfRole("role2", new String[]{"saman"}, null);
+        userStoreManager.updateUserListOfRole("role3", null, new String[]{"amara", "sunil"});
 
-        String[] userOfRole5 = admin.getUserListOfRole("role5");
+        String[] userOfRole5 = userStoreManager.getUserListOfRole("role5");
         assertEquals(1, userOfRole5.length);
 
-        String[] userOfRole4 = admin.getUserListOfRole("role4");
+        String[] userOfRole4 = userStoreManager.getUserListOfRole("role4");
         assertEquals(0, userOfRole4.length);
 
         try {
-            admin.updateUserListOfRole("rolexx", null, new String[]{"amara", "sunil"});
+            userStoreManager.updateUserListOfRole("rolexx", null, new String[]{"amara", "sunil"});
             TestCase.assertTrue(false);
         } catch (Exception e) {
             // exptected error in negative testing
@@ -449,17 +450,7 @@ public class AdvancedJDBCRealmTest extends BaseTestCase {
             }
         }
         try {
-            admin.updateUserListOfRole("role2", null, new String[]{"d"});
-            TestCase.assertTrue(false);
-        } catch (Exception e) {
-            // exptected error in negative testing
-            if (log.isDebugEnabled()) {
-                log.debug("Expected error, hence ignored", e);
-            }
-        }
-
-        try {
-            admin.updateRoleListOfUser("saman", new String[]{"x"}, new String[]{"y"});
+            userStoreManager.updateUserListOfRole("role2", null, new String[]{"d"});
             TestCase.assertTrue(false);
         } catch (Exception e) {
             // exptected error in negative testing
@@ -469,7 +460,17 @@ public class AdvancedJDBCRealmTest extends BaseTestCase {
         }
 
         try {
-            admin.updateUserListOfRole(realmConfig.getAdminRoleName(), null,
+            userStoreManager.updateRoleListOfUser("saman", new String[]{"x"}, new String[]{"y"});
+            TestCase.assertTrue(false);
+        } catch (Exception e) {
+            // exptected error in negative testing
+            if (log.isDebugEnabled()) {
+                log.debug("Expected error, hence ignored", e);
+            }
+        }
+
+        try {
+            userStoreManager.updateUserListOfRole(realmConfig.getAdminRoleName(), null,
                     new String[]{realmConfig.getAdminUserName()});
             TestCase.assertTrue(false);
         } catch (Exception e) {
@@ -481,7 +482,7 @@ public class AdvancedJDBCRealmTest extends BaseTestCase {
 
         int count = sampleAbstractUserManagementErrorListener.getUpdateRoleListOfUserFailureCount();
         try {
-            admin.updateRoleListOfUser(realmConfig.getAdminUserName(), new String[]{realmConfig.
+            userStoreManager.updateRoleListOfUser(realmConfig.getAdminUserName(), new String[]{realmConfig.
                     getAdminRoleName()}, null);
             TestCase.assertTrue(false);
         } catch (Exception e) {
@@ -496,7 +497,7 @@ public class AdvancedJDBCRealmTest extends BaseTestCase {
 
         count = sampleAbstractUserManagementErrorListener.getUpdateUserRoleListFailureCount();
         try {
-            admin.updateUserListOfRole(realmConfig.getEveryOneRoleName(), new String[]{"saman"},
+            userStoreManager.updateUserListOfRole(realmConfig.getEveryOneRoleName(), new String[]{"saman"},
                     null);
             TestCase.assertTrue(false);
         } catch (Exception e) {
@@ -510,7 +511,7 @@ public class AdvancedJDBCRealmTest extends BaseTestCase {
         }
 
         try {
-            admin.updateRoleListOfUser("sunil", new String[]{realmConfig.getEveryOneRoleName()},
+            userStoreManager.updateRoleListOfUser("sunil", new String[]{realmConfig.getEveryOneRoleName()},
                     null);
             TestCase.assertTrue(false);
         } catch (Exception e) {
@@ -521,7 +522,7 @@ public class AdvancedJDBCRealmTest extends BaseTestCase {
         }
 
         try {
-            admin.updateRoleName("role2", "role5");
+            userStoreManager.updateRoleName("role2", "role5");
             TestCase.assertTrue(false);
         } catch (Exception e) {
             // exptected error in negative testing
@@ -529,7 +530,18 @@ public class AdvancedJDBCRealmTest extends BaseTestCase {
                 log.debug("Expected error, hence ignored", e);
             }
         }
-
+        int maxUserNameListLength = 10;
+        userStoreManager.addRole("role6", null, null);
+        for (int i = 0; i < maxUserNameListLength + 1; i++) {
+            String userName = "sanjeev" + i;
+            userStoreManager.addUser(userName, "pass6", null, null, null, false);
+            userStoreManager.updateRoleListOfUser(userName, null, new String[]{"role6"});
+        }
+        if (userStoreManager instanceof AbstractUserStoreManager) {
+            String[] userNames = ((AbstractUserStoreManager) userStoreManager).getUserListOfRole("role6", null,
+                    maxUserNameListLength);
+            TestCase.assertEquals(maxUserNameListLength, userNames.length);
+        }
     }
 
     public void doAuthorizationStuff() throws Exception {

@@ -23,7 +23,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.CarbonConstants;
-import org.wso2.carbon.base.ServerConfiguration;
 import org.wso2.carbon.context.CarbonContext;
 import org.wso2.carbon.user.api.RealmConfiguration;
 import org.wso2.carbon.user.core.PaginatedUserStoreManager;
@@ -85,6 +84,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import javax.sql.DataSource;
 
 import static org.wso2.carbon.user.core.constants.UserCoreErrorConstants.ErrorMessages.ERROR_CODE_DUPLICATE_WHILE_ADDING_A_HYBRID_ROLE;
@@ -98,6 +98,8 @@ public abstract class AbstractUserStoreManager implements UserStoreManager, Pagi
 
     protected static final String TRUE_VALUE = "true";
     protected static final String FALSE_VALUE = "false";
+    protected static final String QUERY_FILTER_STRING_ANY = "*";
+    protected static final int QUERY_MAX_ITEM_LIMIT_ANY = -1;
     private static final String MAX_LIST_LENGTH = "100";
     private static final int MAX_ITEM_LIMIT_UNLIMITED = -1;
     private static final String MULIPLE_ATTRIBUTE_ENABLE = "MultipleAttributeEnable";
@@ -4249,6 +4251,26 @@ public abstract class AbstractUserStoreManager implements UserStoreManager, Pagi
             return (String[]) object;
         }
 
+        return getUserListOfRole(roleName, QUERY_FILTER_STRING_ANY, QUERY_MAX_ITEM_LIMIT_ANY);
+    }
+
+    /**
+     * Retrieves a list of user names belongs to the given role and matches the given string filter.
+     *
+     * @param roleName Name of the role.
+     * @param filter The string to filter out names of users belong to the given role.
+     * @param maxItemLimit Maximum number of users returned.
+     * @return User name list.
+     * @throws UserStoreException
+     */
+    public final String[] getUserListOfRole(String roleName, String filter, int maxItemLimit) throws UserStoreException {
+
+        if (!isSecureCall.get()) {
+            Class argTypes[] = new Class[]{String.class, String.class, int.class};
+            Object object = callSecure("getUserListOfRole", new Object[]{roleName, filter, maxItemLimit}, argTypes);
+            return (String[]) object;
+        }
+
         String[] userNames = new String[0];
 
         // If role does not exit, just return
@@ -4260,7 +4282,13 @@ public abstract class AbstractUserStoreManager implements UserStoreManager, Pagi
         UserStore userStore = getUserStore(roleName);
 
         if (userStore.isRecurssive()) {
-            return userStore.getUserStoreManager().getUserListOfRole(userStore.getDomainFreeName());
+            UserStoreManager resolvedUserStoreManager = userStore.getUserStoreManager();
+            if (resolvedUserStoreManager instanceof AbstractUserStoreManager) {
+                return ((AbstractUserStoreManager) resolvedUserStoreManager)
+                        .getUserListOfRole(userStore.getDomainFreeName(), filter, maxItemLimit);
+            } else {
+                return resolvedUserStoreManager.getUserListOfRole(userStore.getDomainFreeName());
+            }
         }
 
 
@@ -4325,7 +4353,7 @@ public abstract class AbstractUserStoreManager implements UserStoreManager, Pagi
         }
 
         if (readGroupsEnabled) {
-            userNames = doGetUserListOfRole(roleName, "*");
+            userNames = doGetUserListOfRole(roleName, filter, maxItemLimit);
             handleDoPostGetUserListOfRole(roleName, userNames);
         }
 
@@ -5805,6 +5833,26 @@ public abstract class AbstractUserStoreManager implements UserStoreManager, Pagi
      */
     protected abstract String[] doGetUserListOfRole(String roleName, String filter)
             throws UserStoreException;
+
+    /**
+     * Return the list of users belong to the given role for the given filter and max item limit.
+     *
+     * @param roleName Name of the role.
+     * @param filter String filter value.
+     * @param maxItemLimit Maximum number of users in the returned array.
+     * @return An array of users.
+     * @throws UserStoreException
+     */
+    protected String[] doGetUserListOfRole(String roleName, String filter, int maxItemLimit)
+            throws UserStoreException {
+
+        if (log.isDebugEnabled()) {
+            log.debug("Using the default implementation of retrieving users in the role: " + roleName + " only with " +
+                    "the filter: " + filter + ". The provided value: " + maxItemLimit + " for the maximum limit " +
+                    "of returning users is ignored");
+        }
+        return doGetUserListOfRole(roleName, filter);
+    }
 
     /**
      * @param userName
