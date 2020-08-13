@@ -52,6 +52,7 @@ import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 import javax.naming.Name;
+import javax.naming.NameAlreadyBoundException;
 import javax.naming.NameParser;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
@@ -1375,7 +1376,14 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
                         String searchFilter = context.getSearchFilter();
 
                         if (isExistingRole(deletedRole)) {
-                            roleSearchFilter = searchFilter.replace("?", escapeSpecialCharactersForFilter(deletedRole));
+                            roleSearchFilter = "(&" + searchFilter.replace("?",
+                                    escapeSpecialCharactersForFilter(deletedRole)) + "(" + membershipAttribute + "=" +
+                                    userNameDN + "))";
+
+                            if (log.isDebugEnabled()) {
+                                log.debug("Searching in the group where the user is assigned with search filter: " +
+                                        roleSearchFilter);
+                            }
                             String[] returningAttributes = new String[]{membershipAttribute, roleNameAttribute};
                             String searchBase = context.getSearchBase();
                             NamingEnumeration<SearchResult> groupResults =
@@ -1390,7 +1398,7 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
                                 resultedGroup = groupResults.next();
                                 groupDN = getGroupName(resultedGroup);
                             }
-                            if (resultedGroup != null && isUserInRole(userNameDN, resultedGroup)) {
+                            if (resultedGroup != null) {
                                 this.modifyUserInRole(userNameDN, groupDN, DirContext.REMOVE_ATTRIBUTE,
                                         searchBase);
                             } else {
@@ -1426,7 +1434,14 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
                         String searchFilter = context.getSearchFilter();
 
                         if (isExistingRole(newRole)) {
-                            roleSearchFilter = searchFilter.replace("?", escapeSpecialCharactersForFilter(newRole));
+                            roleSearchFilter = "(&" + searchFilter.replace("?",
+                                    escapeSpecialCharactersForFilter(newRole)) + "(" + membershipAttribute + "=" +
+                                    userNameDN + "))";
+
+                            if (log.isDebugEnabled()) {
+                                log.debug("Searching in the group where the user is assigned with search filter: " +
+                                        roleSearchFilter);
+                            }
                             String[] returningAttributes = new String[]{membershipAttribute, roleNameAttribute};
                             String searchBase = context.getSearchBase();
 
@@ -1436,14 +1451,10 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
                                             SearchControls.SUBTREE_SCOPE,
                                             mainDirContext,
                                             searchBase);
-                            SearchResult resultedGroup = null;
+
                             // assume only one group with given group name
-                            String groupDN = null;
-                            if (groupResults.hasMore()) {
-                                resultedGroup = groupResults.next();
-                                groupDN = getGroupName(resultedGroup);
-                            }
-                            if (resultedGroup != null && !isUserInRole(userNameDN, resultedGroup)) {
+                            String groupDN = "cn=" + newRole;
+                            if (!groupResults.hasMore()) {
                                 modifyUserInRole(userNameDN, groupDN, DirContext.ADD_ATTRIBUTE,
                                         searchBase);
                             } else {
@@ -1519,11 +1530,9 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
 
             try {
                 searchFilter = searchFilter.replace("?", escapeSpecialCharactersForFilter(roleName));
-                String membershipAttributeName =
-                        realmConfig.getUserStoreProperty(LDAPConstants.MEMBERSHIP_ATTRIBUTE);
                 String roleNameAttribute =
                         realmConfig.getUserStoreProperty(LDAPConstants.GROUP_NAME_ATTRIBUTE);
-                String[] returningAttributes = new String[]{membershipAttributeName, roleNameAttribute};
+                String[] returningAttributes = new String[]{roleNameAttribute};
 
                 String searchBase = ctx.getSearchBase();
                 groupSearchResults =
@@ -1541,11 +1550,7 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
                 // restriction specified in user-mgt.xml by
                 // checking whether all users are trying to be deleted
                 // before updating LDAP.
-                Attribute returnedMemberAttribute =
-                        resultedGroup.getAttributes()
-                                .get(membershipAttributeName);
-                if (!emptyRolesAllowed &&
-                        newUsers.length - deletedUsers.length + returnedMemberAttribute.size() == 0) {
+                if (!emptyRolesAllowed) {
                     errorMessage =
                             "There should be at least one member in the role. "
                                     + "Hence can not delete all the members.";
@@ -1667,6 +1672,12 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
                 logger.debug("User: " + userNameDN + " was successfully " + "modified in LDAP group: "
                         + groupRDN);
             }
+        } catch (NameAlreadyBoundException e) {
+            String errorMessage = "User: " + userNameDN + " already exists in in LDAP role: " + groupRDN;
+            if (log.isDebugEnabled()) {
+                log.debug(errorMessage, e);
+            }
+            throw new UserStoreException(errorMessage);
         } catch (NamingException e) {
             String errorMessage = "Error occurred while modifying user entry: " + userNameDN
                     + " in LDAP role: " + groupRDN;
