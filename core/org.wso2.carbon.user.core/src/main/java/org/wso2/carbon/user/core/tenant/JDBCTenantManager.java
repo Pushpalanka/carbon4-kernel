@@ -311,65 +311,74 @@ public class JDBCTenantManager implements TenantManager {
 
 
         TenantCacheEntry<Tenant> entry = tenantCacheManager.getValueFromCache(new TenantIdKey(tenantId));
+        String syncKey = tenantId + "_JDBCTenantManager_getTenant";
 
         if ((entry != null) && (entry.getTenant() != null)) {
             return entry.getTenant();
         }
-        Connection dbConnection = null;
-        PreparedStatement prepStmt = null;
-        ResultSet result = null;
         Tenant tenant = null;
-        int id;
-        try {
-            dbConnection = getDBConnection();
-            String sqlStmt = TenantConstants.GET_TENANT_SQL;
-            prepStmt = dbConnection.prepareStatement(sqlStmt);
-            prepStmt.setInt(1, tenantId);
+        synchronized (syncKey.intern()) {
+            entry = tenantCacheManager.getValueFromCache(new TenantIdKey(tenantId));
 
-            result = prepStmt.executeQuery();
+            if ((entry != null) && (entry.getTenant() != null)) {
+                return entry.getTenant();
+            } else {
+                Connection dbConnection = null;
+                PreparedStatement prepStmt = null;
+                ResultSet result = null;
+                int id;
+                try {
+                    dbConnection = getDBConnection();
+                    String sqlStmt = TenantConstants.GET_TENANT_SQL;
+                    prepStmt = dbConnection.prepareStatement(sqlStmt);
+                    prepStmt.setInt(1, tenantId);
 
-            if (result.next()) {
-                id = result.getInt("UM_ID");
-                String domain = result.getString("UM_DOMAIN_NAME");
-                String email = result.getString("UM_EMAIL");
-                boolean active = result.getBoolean("UM_ACTIVE");
-                Date createdDate = new Date(result.getTimestamp(
-                        "UM_CREATED_DATE").getTime());
-                InputStream is = result.getBinaryStream("UM_USER_CONFIG");
+                    result = prepStmt.executeQuery();
 
-                RealmConfigXMLProcessor processor = new RealmConfigXMLProcessor();
-                RealmConfiguration realmConfig = processor.buildTenantRealmConfiguration(is);
-                realmConfig.setTenantId(id);
+                    if (result.next()) {
+                        id = result.getInt("UM_ID");
+                        String domain = result.getString("UM_DOMAIN_NAME");
+                        String email = result.getString("UM_EMAIL");
+                        boolean active = result.getBoolean("UM_ACTIVE");
+                        Date createdDate = new Date(result.getTimestamp(
+                                "UM_CREATED_DATE").getTime());
+                        InputStream is = result.getBinaryStream("UM_USER_CONFIG");
 
-                tenant = new Tenant();
-                tenant.setId(id);
-                tenant.setDomain(domain);
-                tenant.setEmail(email);
-                tenant.setCreatedDate(createdDate);
-                tenant.setActive(active);
-                tenant.setRealmConfig(realmConfig);
-                setSecondaryUserStoreConfig(realmConfig, tenantId);
-                tenant.setAdminName(realmConfig.getAdminUserName());
+                        RealmConfigXMLProcessor processor = new RealmConfigXMLProcessor();
+                        RealmConfiguration realmConfig = processor.buildTenantRealmConfiguration(is);
+                        realmConfig.setTenantId(id);
 
-                if (log.isDebugEnabled()) {
-                    log.debug("Obtained tenant from database for the given tenant ID: " + tenantId
-                            + ", hence adding tenant to cache where tenantDomain: {" + domain + "}");
+                        tenant = new Tenant();
+                        tenant.setId(id);
+                        tenant.setDomain(domain);
+                        tenant.setEmail(email);
+                        tenant.setCreatedDate(createdDate);
+                        tenant.setActive(active);
+                        tenant.setRealmConfig(realmConfig);
+                        setSecondaryUserStoreConfig(realmConfig, tenantId);
+                        tenant.setAdminName(realmConfig.getAdminUserName());
+
+                        if (log.isDebugEnabled()) {
+                            log.debug("Obtained tenant from database for the given tenant ID: " + tenantId
+                                    + ", hence adding tenant to cache where tenantDomain: {" + domain + "}");
+                        }
+                        tenantDomainNameValidation(domain);
+                        tenantCacheManager.addToCache(new TenantIdKey(id), new TenantCacheEntry<Tenant>(tenant));
+                        tenantDomainCache.addToCache(new TenantIdKey(id), new TenantDomainEntry(domain));
+                        tenantIdCache.addToCache(new TenantDomainKey(domain), new TenantIdEntry(id));
+                    }
+                    dbConnection.commit();
+                } catch (SQLException e) {
+                    DatabaseUtil.rollBack(dbConnection);
+                    String msg = "Error in getting the tenant with " + "tenant id: " + tenantId + ".";
+                    if (log.isDebugEnabled()) {
+                        log.debug(msg, e);
+                    }
+                    throw new UserStoreException(msg, e);
+                } finally {
+                    DatabaseUtil.closeAllConnections(dbConnection, result, prepStmt);
                 }
-                tenantDomainNameValidation(domain);
-                tenantCacheManager.addToCache(new TenantIdKey(id), new TenantCacheEntry<Tenant>(tenant));
-                tenantDomainCache.addToCache(new TenantIdKey(id), new TenantDomainEntry(domain));
-                tenantIdCache.addToCache(new TenantDomainKey(domain), new TenantIdEntry(id));
             }
-            dbConnection.commit();
-        } catch (SQLException e) {
-            DatabaseUtil.rollBack(dbConnection);
-            String msg = "Error in getting the tenant with " + "tenant id: " + tenantId + ".";
-            if (log.isDebugEnabled()) {
-                log.debug(msg, e);
-            }
-            throw new UserStoreException(msg, e);
-        } finally {
-            DatabaseUtil.closeAllConnections(dbConnection, result, prepStmt);
         }
         return tenant;
     }
