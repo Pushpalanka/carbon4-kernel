@@ -91,6 +91,8 @@ public class JDBCUserStoreManager extends AbstractUserStoreManager {
     // private boolean useOnlyInternalRoles;
     private static Log log = LogFactory.getLog(JDBCUserStoreManager.class);
 
+    private static final String QUERY_FILTER_STRING_ANY = "*";
+    private static final String SQL_FILTER_STRING_UNDER_SCORE = "_";
     private static final String SQL_FILTER_STRING_ANY = "%";
     private static final String SQL_FILTER_CHAR_ESCAPE = "\\";
     public static final String QUERY_BINDING_SYMBOL = "?";
@@ -766,8 +768,8 @@ public class JDBCUserStoreManager extends AbstractUserStoreManager {
 
         if (StringUtils.isNotEmpty(filter)) {
             filter = filter.trim();
-            filter = filter.replace("*", "%");
-            filter = filter.replace("?", "_");
+            filter = filter.replace(QUERY_FILTER_STRING_ANY, SQL_FILTER_STRING_ANY);
+            filter = filter.replace(QUERY_BINDING_SYMBOL, SQL_FILTER_STRING_UNDER_SCORE);
         } else {
             filter = "%";
         }
