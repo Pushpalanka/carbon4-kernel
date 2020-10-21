@@ -644,24 +644,21 @@ public class DatabaseUtil {
                 validateParameterCount(sqlStmt, params);
                 populatePreparedStatementParameters(prepStmt, params);
             }
-
             if (maxRows >= 0) {
                 prepStmt.setMaxRows(maxRows);
             }
-
             if (queryTimeout >= 0) {
                 prepStmt.setQueryTimeout(queryTimeout);
             }
-
             rs = prepStmt.executeQuery();
-            List<String> lst = new ArrayList<String>();
+            List<String> nameList = new ArrayList<String>();
 
             while (rs.next()) {
                 String name = rs.getString(1);
-                lst.add(name);
+                nameList.add(name);
             }
-            if (lst.size() > 0) {
-                values = lst.toArray(new String[lst.size()]);
+            if (nameList.size() > 0) {
+                values = nameList.toArray(new String[nameList.size()]);
             }
             return values == null ? EMPTY_STRING_ARRAY : values;
         } catch (SQLException e) {
