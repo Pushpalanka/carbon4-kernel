@@ -70,9 +70,9 @@ public class Utils {
         Source xmlStreamSource = new StreamSource(xmlStream);
         Source xslStreamSource = new StreamSource(xslStream);
         Result result = new StreamResult(outputStream);
-        TransformerFactory factory = getSecureTransformerFactory();
-        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        Transformer transformer = factory.newTransformer(xslStreamSource);
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        transformerFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        Transformer transformer = transformerFactory.newTransformer(xslStreamSource);
         transformer.transform(xmlStreamSource, result);
     }
 
