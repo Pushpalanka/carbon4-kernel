@@ -800,10 +800,18 @@ public class ActiveDirectoryUserStoreManager extends ReadWriteLDAPUserStoreManag
     @Override
     public void doSetUserClaimValue(String userName, String claimURI, String value,
                                     String profileName) throws UserStoreException {
-        // get the LDAP Directory context
+
+        if (isImmutableAttribute(userName, claimURI, value)) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Immutable attribute:" + claimURI + ". Therefore not updating user claim.");
+            }
+            return;
+        }
+
+        // Get the LDAP Directory context.
         DirContext dirContext = this.connectionSource.getContext();
         DirContext subDirContext = null;
-        // search the relevant user entry by user name
+        // Search the relevant user entry by user name.
         String userSearchBase = realmConfig.getUserStoreProperty(LDAPConstants.USER_SEARCH_BASE);
         String userSearchFilter = realmConfig
                 .getUserStoreProperty(LDAPConstants.USER_NAME_SEARCH_FILTER);
@@ -1129,7 +1137,7 @@ public class ActiveDirectoryUserStoreManager extends ReadWriteLDAPUserStoreManag
     }
 
     @Override
-    protected void processAttributesBeforeUpdate(Map<String, String> userStorePropertyValues) {
+    protected void processAttributesBeforeUpdate(Map<String, ? extends Object> userStorePropertyValues) {
 
         String immutableAttributesProperty = realmConfig
                 .getUserStoreProperty(UserStoreConfigConstants.immutableAttributes);

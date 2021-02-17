@@ -17,6 +17,7 @@
  */
 package org.wso2.carbon.user.core.ldap;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -48,6 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
@@ -440,24 +442,29 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
      */
     protected void setUserClaims(Map<String, String> claims, BasicAttributes basicAttributes,
                                  String userName) throws UserStoreException {
+
         BasicAttribute claim;
         boolean debug = log.isDebugEnabled();
 
         log.debug("Processing user claims");
-		/*
-		 * we keep boolean values to know whether compulsory attributes 'sn' and 'cn' are set during
-		 * setting claims.
-		 */
+        /*
+         * We keep boolean values to know whether compulsory attributes 'sn' and 'cn' are set during
+         * setting claims.
+         */
         boolean isSNExists = false;
         boolean isCNExists = false;
 
+        String immutableAttributesProperty = Optional.ofNullable(realmConfig
+                .getUserStoreProperty(UserStoreConfigConstants.immutableAttributes)).orElse(EMPTY_ATTRIBUTE_STRING);
+        String[] immutableAttributes = StringUtils.split(immutableAttributesProperty, ",");
+
         if (claims != null) {
             for (Map.Entry<String, String> entry : claims.entrySet()) {
-				/*
-				 * LDAP does not allow for empty values. If an attribute has a value it’s stored
-				 * with the entry, otherwise it is not. Hence needs to check for empty values before
-				 * storing the attribute.
-				 */
+                /*
+                 * LDAP does not allow for empty values. If an attribute has a value it’s stored
+                 * with the entry, otherwise it is not. Hence needs to check for empty values before
+                 * storing the attribute.
+                 */
                 if (EMPTY_ATTRIBUTE_STRING.equals(entry.getValue())) {
                     continue;
                 }
@@ -480,6 +487,15 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
                     isCNExists = true;
                 } else if (ATTR_NAME_SN.equals(attributeName)) {
                     isSNExists = true;
+                }
+
+                // Skip in case of immutable attribute passing via the claim map.
+                if (StringUtils.isNotEmpty(attributeName) &&
+                        ArrayUtils.contains(immutableAttributes, attributeName)) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Skipped Immutable attribute: " + attributeName);
+                    }
+                    continue;
                 }
 
                 if (debug) {
@@ -963,9 +979,40 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
         }
     }
 
+    protected boolean isImmutableAttribute(String userName, String claimURI, String value) throws UserStoreException {
+
+        try {
+            String attributeName = getClaimAtrribute(claimURI, userName, null);
+            Map<String, Object> userStoreAttributeValueMap = new HashMap<>();
+            userStoreAttributeValueMap.put(attributeName, value);
+
+            // Exclude the immutable attributes.
+            processAttributesBeforeUpdate(userStoreAttributeValueMap);
+
+            // For an immutable attribute the Map is empty.
+            if (userStoreAttributeValueMap.isEmpty()) {
+                return true;
+            }
+        } catch (org.wso2.carbon.user.api.UserStoreException e) {
+            throw new UserStoreException(
+                    "Error occurred while getting the claim attribute for claimURI: " + claimURI + " of the user: "
+                            + userName, e);
+        }
+        return false;
+    }
+
     @Override
     public void doSetUserClaimValue(String userName, String claimURI, String value,
                                     String profileName) throws UserStoreException {
+
+        // Check if the claim is immutable.
+        if (isImmutableAttribute(userName, claimURI, value)) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Immutable attribute:" + claimURI + ". Therefore not updating user claim for user: " +
+                        userName);
+            }
+            return;
+        }
 
         // get the LDAP Directory context
         DirContext dirContext = this.connectionSource.getContext();
@@ -2093,6 +2140,14 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
         setAdvancedProperty(UserStoreConfigConstants.enableMaxUserLimitForSCIM, UserStoreConfigConstants
                         .enableMaxUserLimitDisplayName, "false",
                 UserStoreConfigConstants.enableMaxUserLimitForSCIMDescription);
+        setAdvancedProperty(UserStoreConfigConstants.SSLCertificateValidationEnabled, "Enable SSL certificate" +
+                " validation", "true", UserStoreConfigConstants.SSLCertificateValidationEnabledDescription);
+        setAdvancedProperty(UserStoreConfigConstants.immutableAttributes,
+                UserStoreConfigConstants.immutableAttributesDisplayName, " ",
+                UserStoreConfigConstants.immutableAttributesDescription);
+        setAdvancedProperty(UserStoreConfigConstants.timestampAttributes,
+                UserStoreConfigConstants.timestampAttributesDisplayName, " ",
+                UserStoreConfigConstants.timestampAttributesDescription);
     }
 
 //	/**
@@ -2391,8 +2446,63 @@ public class ReadWriteLDAPUserStoreManager extends ReadOnlyLDAPUserStoreManager 
 
     private static void setAdvancedProperty(String name, String displayName, String value,
                                             String description) {
+
         Property property = new Property(name, value, displayName + "#" + description, null);
         RW_LDAP_UM_ADVANCED_PROPERTIES.add(property);
 
+    }
+
+    @Override
+    protected void processAttributesBeforeUpdate(Map<String, ? extends Object> userStorePropertyValues) {
+
+        String immutableAttributesProperty = Optional.ofNullable(realmConfig
+                .getUserStoreProperty(UserStoreConfigConstants.immutableAttributes)).orElse(" ");
+
+        String[] immutableAttributes = StringUtils.split(immutableAttributesProperty, ",");
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Retrieved user store properties for update: " + userStorePropertyValues);
+        }
+
+        if (ArrayUtils.isNotEmpty(immutableAttributes)) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Skipping Read only user store maintained default attributes: " +
+                        Arrays.toString(immutableAttributes));
+            }
+
+            for (String str : immutableAttributes) {
+                String trim = StringUtils.trim(str);
+                userStorePropertyValues.remove(trim);
+            }
+        }
+    }
+
+    /**
+     * @deprecated Use {@link #processAttributesBeforeUpdate(Map)}
+     */
+    @Deprecated
+    protected void processAttributesBeforeUpdate(String userName, Map<String, String> userStorePropertyValues,
+                                                 String profileName) {
+
+        String immutableAttributesProperty = Optional.ofNullable(realmConfig
+                .getUserStoreProperty(UserStoreConfigConstants.immutableAttributes)).orElse(" ");
+
+        String[] immutableAttributes = StringUtils.split(immutableAttributesProperty, ",");
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Retrieved user store properties for update: " + userStorePropertyValues);
+        }
+
+        if (ArrayUtils.isNotEmpty(immutableAttributes)) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Skipping Read only user store maintained default attributes: " +
+                        Arrays.toString(immutableAttributes));
+            }
+
+            for (String str : immutableAttributes) {
+                String trim = StringUtils.trim(str);
+                userStorePropertyValues.remove(trim);
+            }
+        }
     }
 }

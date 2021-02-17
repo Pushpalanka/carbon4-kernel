@@ -5543,7 +5543,7 @@ public abstract class AbstractUserStoreManager implements UserStoreManager, Pagi
      * @param userStoreProperties un-processed map (userstore attribute name -> attribute value) of user store
      *                            attribute values
      */
-    protected void processAttributesBeforeUpdate(Map<String, String> userStoreProperties) {
+    protected void processAttributesBeforeUpdate(Map<String, ? extends Object> userStoreProperties) {
 
         // Not implemented.
     }

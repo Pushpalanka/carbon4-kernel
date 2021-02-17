@@ -59,6 +59,10 @@ import org.wso2.carbon.utils.UnsupportedSecretTypeException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -68,6 +72,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
@@ -131,6 +136,7 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
     private static final String USE_ANONYMOUS_BIND = "AnonymousBind";
     protected static final int MEMBERSHIP_ATTRIBUTE_RANGE_VALUE = 0;
     private static final int MAX_ITEM_LIMIT_UNLIMITED = -1;
+    private static final String GENARALIZE_DATE_TIME_FORMAT = "uuuuMMddHHmmss[,S][.S]X";
 
     private String cacheExpiryTimeAttribute = ""; //Default: expire with default system wide cache expiry
     private long userDnCacheExpiryTime = 0; //Default: No cache
@@ -4321,6 +4327,14 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
         setAdvancedProperty(UserStoreConfigConstants.enableMaxUserLimitForSCIM, UserStoreConfigConstants
                         .enableMaxUserLimitDisplayName, "false",
                 UserStoreConfigConstants.enableMaxUserLimitForSCIMDescription);
+        setAdvancedProperty(UserStoreConfigConstants.SSLCertificateValidationEnabled, "Enable SSL certificate" +
+                " validation", "true", UserStoreConfigConstants.SSLCertificateValidationEnabledDescription);
+        setAdvancedProperty(UserStoreConfigConstants.immutableAttributes,
+                UserStoreConfigConstants.immutableAttributesDisplayName, " ",
+                UserStoreConfigConstants.immutableAttributesDescription);
+        setAdvancedProperty(UserStoreConfigConstants.timestampAttributes,
+                UserStoreConfigConstants.timestampAttributesDisplayName, " ",
+                UserStoreConfigConstants.timestampAttributesDescription);
     }
 
     private static void setAdvancedProperty(String name, String displayName, String value,
@@ -4545,5 +4559,90 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
             }
         }
         super.finalize();
+    }
+
+    /**
+     * Check whether the given attribute is configured as a binary attribute in the respective user store.
+     *
+     * @param attributeName Name of the attribute.
+     * @return True for a binary attribute, else false.
+     */
+    protected boolean isBinaryUserAttribute(String attributeName) {
+
+        String ldapBinaryAttributesProperty = Optional.ofNullable(realmConfig
+                .getUserStoreProperty(LDAPConstants.LDAP_ATTRIBUTES_BINARY)).orElse("");
+
+        String[] ldapBinaryAttributes = StringUtils.split(ldapBinaryAttributesProperty, ",");
+
+        if (ArrayUtils.isNotEmpty(ldapBinaryAttributes)) {
+            if (log.isDebugEnabled()) {
+                log.debug("LDAP binary attributes: " + Arrays.toString(ldapBinaryAttributes));
+            }
+
+            return ArrayUtils.contains(ldapBinaryAttributes, attributeName);
+        }
+        return false;
+    }
+
+    @Override
+    protected void processAttributesAfterRetrieval(Map<String, String> userStorePropertyValues) {
+
+        String timestampAttributesProperty = Optional.ofNullable(realmConfig
+                .getUserStoreProperty(UserStoreConfigConstants.timestampAttributes)).orElse("");
+
+        String[] timestampAttributes = StringUtils.split(timestampAttributesProperty, ",");
+
+        if (log.isDebugEnabled()) {
+            log.debug("Read only user store  timestamp attributes: " + Arrays.toString(timestampAttributes));
+        }
+
+        if (ArrayUtils.isNotEmpty(timestampAttributes)) {
+            if (log.isDebugEnabled()) {
+                log.debug("Retrieved user store properties before type conversions: " + userStorePropertyValues);
+            }
+
+            Map<String, String> convertedTimestampAttributeValues = new HashMap<>();
+            for (String timestampAttribute : timestampAttributes) {
+                String attribute = StringUtils.trim(timestampAttribute);
+                if (userStorePropertyValues.get(attribute) != null) {
+                    if (convertedTimestampAttributeValues
+                            .put(attribute, convertDateFormatFromLDAP(userStorePropertyValues.get(attribute))) !=
+                            null) {
+                        throw new IllegalStateException("Duplicate key");
+                    }
+                }
+            }
+
+            if (log.isDebugEnabled()) {
+                log.debug("Converted timestamp attribute values: " + convertedTimestampAttributeValues);
+            }
+
+            userStorePropertyValues.putAll(convertedTimestampAttributeValues);
+
+            if (log.isDebugEnabled()) {
+                log.debug("Retrieved user store properties after type conversions: " + userStorePropertyValues);
+            }
+        }
+    }
+
+    /**
+     * Convert date-time format (Generalized Time) to WSO2 format.
+     *
+     * @param date Date formatted in LDAP date format.
+     * @return Date formatted in WSO2 date format.
+     */
+    protected String convertDateFormatFromLDAP(String date) {
+
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(GENARALIZE_DATE_TIME_FORMAT);
+        try {
+            OffsetDateTime offsetDateTime = OffsetDateTime.parse(date, dateTimeFormatter);
+            Instant instant = offsetDateTime.toInstant();
+            return instant.toString();
+        } catch (DateTimeParseException e) {
+            if (log.isDebugEnabled()) {
+                log.debug("Error occurred while parsing the date : " + date, e);
+            }
+            return date;
+        }
     }
 }
