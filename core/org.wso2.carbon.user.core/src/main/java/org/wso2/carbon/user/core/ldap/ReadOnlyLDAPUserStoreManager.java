@@ -4327,8 +4327,8 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
         setAdvancedProperty(UserStoreConfigConstants.enableMaxUserLimitForSCIM, UserStoreConfigConstants
                         .enableMaxUserLimitDisplayName, "false",
                 UserStoreConfigConstants.enableMaxUserLimitForSCIMDescription);
-        setAdvancedProperty(UserStoreConfigConstants.SSLCertificateValidationEnabled, "Enable SSL certificate" +
-                " validation", "true", UserStoreConfigConstants.SSLCertificateValidationEnabledDescription);
+        setAdvancedProperty(UserStoreConfigConstants.SSL_CERTIFICATE_VALIDATION_ENABLED, "Enable SSL certificate" +
+                " validation", "true", UserStoreConfigConstants.SSL_CERTIFICATE_VALIDATION_ENABLED_DESCRIPTION);
         setAdvancedProperty(UserStoreConfigConstants.immutableAttributes,
                 UserStoreConfigConstants.immutableAttributesDisplayName, " ",
                 UserStoreConfigConstants.immutableAttributesDescription);
@@ -4574,11 +4574,11 @@ public class ReadOnlyLDAPUserStoreManager extends AbstractUserStoreManager {
 
         String[] ldapBinaryAttributes = StringUtils.split(ldapBinaryAttributesProperty, ",");
 
-        if (ArrayUtils.isNotEmpty(ldapBinaryAttributes)) {
-            if (log.isDebugEnabled()) {
-                log.debug("LDAP binary attributes: " + Arrays.toString(ldapBinaryAttributes));
-            }
+        if (log.isDebugEnabled()) {
+            log.debug("LDAP binary attributes: " + Arrays.toString(ldapBinaryAttributes));
+        }
 
+        if (ArrayUtils.isNotEmpty(ldapBinaryAttributes)) {
             return ArrayUtils.contains(ldapBinaryAttributes, attributeName);
         }
         return false;
